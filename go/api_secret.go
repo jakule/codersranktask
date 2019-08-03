@@ -13,12 +13,12 @@ import (
 	"net/http"
 )
 
-func AddSecret(w http.ResponseWriter, r *http.Request) {
+func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
 
-func GetSecretByHash(w http.ResponseWriter, r *http.Request) {
+func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }

@@ -10,28 +10,53 @@
 package swagger
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 type Route struct {
 	Name        string
 	Method      string
 	Pattern     string
-	HandlerFunc http.HandlerFunc
+	HandlerFunc paramHandler
 }
 
+type paramHandler func(c *CallParams, w http.ResponseWriter, r *http.Request)
+
 type Routes []Route
+
+func handlerWrapperLogger(inner paramHandler) http.Handler {
+	callParams := &CallParams{
+		ctx:  context.Background(),
+		slog: mustLogger(newLogger()).Sugar(),
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		inner(callParams, w, r)
+	})
+}
+
+func newLogger() (*zap.Logger, error) {
+	return zap.NewProduction()
+}
+
+func mustLogger(logger *zap.Logger, err error) *zap.Logger {
+	if err != nil {
+		panic(err)
+	}
+	return logger
+}
 
 func NewRouter() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		var handler http.Handler
-		handler = route.HandlerFunc
 		handler = Logger(handler, route.Name)
+		handler = handlerWrapperLogger(route.HandlerFunc)
 
 		router.
 			Methods(route.Method).
@@ -43,7 +68,7 @@ func NewRouter() *mux.Router {
 	return router
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello World!")
 }
 
