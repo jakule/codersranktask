@@ -14,6 +14,13 @@ import (
 )
 
 func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(1024 * 1024)
+	if err != nil {
+		c.Errorf("failed to parse form : %v", err)
+		http.Error(w, "failed to parse form", http.StatusBadRequest)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 }
