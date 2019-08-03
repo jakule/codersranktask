@@ -35,6 +35,13 @@ steps:
   workingDirectory: '$(modulePath)'
   displayName: 'Get dependencies, then build'
 
-- script: go test -v ./...
+- script: |
+    go install github.com/jstemmer/go-junit-report
+    go test -v ./... 2>&1 | go-junit-report > ut-report.xml
   workingDirectory: '$(modulePath)'
   displayName: 'Run tests'
+
+- task: PublishTestResults@2
+  inputs:
+    testRunner: JUnit
+    testResultsFiles: $(System.DefaultWorkingDirectory)/**/ut-report.xml
