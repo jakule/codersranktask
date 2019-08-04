@@ -12,9 +12,9 @@ type CallParams struct {
 }
 
 func (c *CallParams) Infof(template string, args ...interface{}) {
-	c.slog.Infof(template, args)
+	c.slog.Infof(template, args...)
 }
 
 func (c *CallParams) Errorf(template string, args ...interface{}) {
-	c.slog.Errorf(template, args)
+	c.slog.Errorf(template, args...)
 }
