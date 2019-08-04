@@ -52,4 +52,4 @@ steps:
     docker build -t registry.heroku.com/codersranktask/web .
     docker push registry.heroku.com/codersranktask/web
   workingDirectory: '$(modulePath)'
-  displayName: "Build and push Docker image"
+  displayName: 'Build and push Docker image'
