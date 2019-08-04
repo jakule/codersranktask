@@ -46,3 +46,10 @@ steps:
   inputs:
     testRunner: JUnit
     testResultsFiles: $(System.DefaultWorkingDirectory)/**/ut-report.xml
+
+- script: |
+    docker login -u _ -p $(HEROKU_TOKEN) registry.heroku.com
+    docker build -t registry.heroku.com/codersranktask/web .
+    docker push registry.heroku.com/codersranktask/web
+  workingDirectory: '$(modulePath)'
+  displayName: "Build and push Docker image"
