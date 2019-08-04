@@ -12,14 +12,38 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	sw "github.com/jakule/codersranktask/go"
+	"github.com/joho/godotenv"
 )
+
+//go:generate mockgen -source=go/storage.go -destination go/mocks/storage_mock.go
 
 func main() {
 	log.Printf("Server started")
 
-	router := sw.NewRouter()
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	// Heroku thing...
+	addr := ":8080"
+	if addrEnv := os.Getenv("PORT"); addrEnv != "" {
+		addr = ":" + addrEnv
+	}
+
+	dbConnStr := os.Getenv("DATABASE_URL")
+	if dbConnStr == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
+
+	err = sw.MigrateDB(dbConnStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	router := sw.NewRouter(dbConnStr)
+	log.Fatal(http.ListenAndServe(addr, router))
 }

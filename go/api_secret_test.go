@@ -2,11 +2,23 @@ package swagger
 
 import (
 	"bytes"
+	"context"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	mock_swagger "github.com/jakule/codersranktask/go/mocks"
 )
+
+func createMockCallParams(storage Storage) *CallParams {
+	return &CallParams{
+		ctx:     context.Background(),
+		slog:    mustLogger(newProdLogger()).Sugar(),
+		storage: storage,
+	}
+}
 
 func TestAddSecret(t *testing.T) {
 	tests := []struct {
@@ -82,7 +94,14 @@ func TestAddSecret(t *testing.T) {
 			req.Header.Set("Accept", "application/json")
 
 			rr := httptest.NewRecorder()
-			handler := handlerWrapperLogger(AddSecret)
+			ctrl := gomock.NewController(t)
+
+			// Assert that Bar() is invoked.
+			defer ctrl.Finish()
+			storageMock := mock_swagger.NewMockStorage(ctrl)
+			storageMock.EXPECT().CreateSecret("secretString").AnyTimes()
+
+			handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
 
 			handler.ServeHTTP(rr, req)
 
@@ -101,7 +120,13 @@ func TestAddSecretMissingForm(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	handler := handlerWrapperLogger(AddSecret)
+	ctrl := gomock.NewController(t)
+
+	// Assert that Bar() is invoked.
+	defer ctrl.Finish()
+
+	storageMock := mock_swagger.NewMockStorage(ctrl)
+	handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
 
 	handler.ServeHTTP(rr, req)
 

@@ -32,8 +32,15 @@ func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id, err := c.Storage().CreateSecret(secret.Secret)
+	if err != nil {
+		c.Errorf("insert failed : %v", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	secretModel := &Secret{
-		Hash:           "",
+		Hash:           id,
 		SecretText:     secret.Secret,
 		CreatedAt:      time.Now().UTC(),
 		ExpiresAt:      time.Time{},

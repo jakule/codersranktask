@@ -30,17 +30,25 @@ type paramHandler func(c *CallParams, w http.ResponseWriter, r *http.Request)
 
 type Routes []Route
 
-func handlerWrapperLogger(inner paramHandler) http.Handler {
-	callParams := &CallParams{
-		ctx:  context.Background(),
-		slog: mustLogger(newLogger()).Sugar(),
-	}
+func handlerWrapperLogger(params *CallParams, inner paramHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		inner(callParams, w, r)
+		inner(params, w, r)
 	})
 }
 
-func newLogger() (*zap.Logger, error) {
+func createCallParams(dbConnStr string) *CallParams {
+	storage, err := NewPgStorage(dbConnStr)
+	if err != nil {
+		panic(err)
+	}
+	return &CallParams{
+		ctx:     context.Background(),
+		slog:    mustLogger(newProdLogger()).Sugar(),
+		storage: storage,
+	}
+}
+
+func newProdLogger() (*zap.Logger, error) {
 	return zap.NewProduction()
 }
 
@@ -51,12 +59,13 @@ func mustLogger(logger *zap.Logger, err error) *zap.Logger {
 	return logger
 }
 
-func NewRouter() *mux.Router {
+func NewRouter(dbConnStr string) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
+		callParams := createCallParams(dbConnStr)
 		var handler http.Handler
-		handler = Logger(handler, route.Name)
-		handler = handlerWrapperLogger(route.HandlerFunc)
+		handler = handlerWrapperLogger(callParams, route.HandlerFunc)
+		handler = Logger(callParams, handler, route.Name)
 
 		router.
 			Methods(route.Method).
