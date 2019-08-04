@@ -9,6 +9,9 @@ RUN go build
 
 FROM alpine:latest
 RUN apk --no-cache --update add ca-certificates
-COPY --from=builder  /build/codersranktask /codersranktask
+COPY sql /app/sql
+COPY .env /app/.env
+COPY --from=builder  /build/codersranktask /app/codersranktask
+WORKDIR /app
 
-CMD ["/codersranktask"]
+CMD ["./codersranktask"]
