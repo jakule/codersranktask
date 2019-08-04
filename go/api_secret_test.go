@@ -14,7 +14,55 @@ func TestAddSecret(t *testing.T) {
 		fields     map[string]string
 		statusCode int
 	}{
-		{"OK", map[string]string{"secret": "secretString"}, http.StatusOK},
+		{
+			"OK",
+			map[string]string{
+				"secret":           "secretString",
+				"expireAfterViews": "15",
+				"expireAfter":      "60",
+			},
+			http.StatusOK,
+		},
+		{
+			"MissingSecret",
+			map[string]string{
+				"expireAfterViews": "15",
+				"expireAfter":      "60",
+			},
+			http.StatusBadRequest,
+		},
+		{
+			"MissingExpireAfter",
+			map[string]string{
+				"secret":           "secretString",
+				"expireAfterViews": "15",
+			},
+			http.StatusBadRequest,
+		},
+		{
+			"MissingExpireAfterViews",
+			map[string]string{
+				"secret":      "secretString",
+				"expireAfter": "60",
+			},
+			http.StatusBadRequest,
+		},
+		{
+			"WrongExpireAfter",
+			map[string]string{
+				"secret":           "secretString",
+				"expireAfterViews": "21fse",
+			},
+			http.StatusBadRequest,
+		},
+		{
+			"WrongExpireAfterViews",
+			map[string]string{
+				"secret":      "secretString",
+				"expireAfter": "vd",
+			},
+			http.StatusBadRequest,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,6 +79,7 @@ func TestAddSecret(t *testing.T) {
 				t.Fatal(err)
 			}
 			req.Header.Set("Content-Type", writer.FormDataContentType())
+			req.Header.Set("Accept", "application/json")
 
 			rr := httptest.NewRecorder()
 			handler := handlerWrapperLogger(AddSecret)
