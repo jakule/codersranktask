@@ -52,6 +52,6 @@ steps:
     docker build --iidfile imageid.txt -t registry.heroku.com/codersranktask/web .
     echo "Docker Image ID is $(cat imageid.txt)"
     docker push registry.heroku.com/codersranktask/web
-    curl -X PATCH https://api.heroku.com/apps/codersranktask/formation --header "Content-Type: application/json" --header "Accept: application/vnd.heroku+json; version=3.docker-releases" --header "Authorization: Bearer ${HEROKU_TOKEN}" --data '{ "updates": [ { "type": "web", "docker_image": "'$(cat imageid.txt)'" } ] }'
+    curl -X PATCH https://api.heroku.com/apps/codersranktask/formation --header "Content-Type: application/json" --header "Accept: application/vnd.heroku+json; version=3.docker-releases" --header "Authorization: Bearer $(HEROKU_TOKEN)" --data '{ "updates": [ { "type": "web", "docker_image": "'$(cat imageid.txt)'" } ] }'
   workingDirectory: '$(modulePath)'
   displayName: 'Build and push Docker image'
