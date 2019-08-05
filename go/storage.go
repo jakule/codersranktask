@@ -13,6 +13,8 @@ type Storage interface {
 	GetSecret(secretID string) (string, error)
 }
 
+var ErrHashNotfound = errors.New("hash not found")
+
 type PgStorage struct {
 	db *sql.DB
 }
@@ -42,7 +44,7 @@ func (s *PgStorage) GetSecret(secretID string) (string, error) {
 	var secret string
 	switch err := row.Scan(&secret); err {
 	case sql.ErrNoRows:
-		return "", errors.New("no rows were returned")
+		return "", ErrHashNotfound
 	case nil:
 		return secret, nil
 	default:

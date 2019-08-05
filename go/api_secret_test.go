@@ -3,12 +3,15 @@ package swagger
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	mock_swagger "github.com/jakule/codersranktask/go/mocks"
 )
 
@@ -96,18 +99,16 @@ func TestAddSecret(t *testing.T) {
 			rr := httptest.NewRecorder()
 			ctrl := gomock.NewController(t)
 
-			// Assert that Bar() is invoked.
 			defer ctrl.Finish()
 			storageMock := mock_swagger.NewMockStorage(ctrl)
 			storageMock.EXPECT().CreateSecret("secretString").AnyTimes()
 
 			handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
-
 			handler.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tt.statusCode {
 				t.Errorf("handler returned wrong status code: got %v want %v",
-					status, http.StatusOK)
+					status, tt.statusCode)
 			}
 		})
 	}
@@ -133,5 +134,48 @@ func TestAddSecretMissingForm(t *testing.T) {
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
+	}
+}
+
+func TestGetSecretByHash(t *testing.T) {
+	req, err := http.NewRequest("GET", "/secret", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hashString := "hashString"
+	secret := "secretText"
+	req = mux.SetURLVars(req, map[string]string{"hash": hashString})
+	req.Header.Set("Accept", "application/json")
+
+	rr := httptest.NewRecorder()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	storageMock := mock_swagger.NewMockStorage(ctrl)
+	storageMock.
+		EXPECT().
+		GetSecret(hashString).
+		Return(secret, nil).
+		AnyTimes()
+
+	handler := handlerWrapperLogger(createMockCallParams(storageMock), GetSecretByHash)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+	}
+
+	b, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf("failed to parse body %v", err)
+	}
+	var secretResp Secret
+	if err := json.Unmarshal(b, &secretResp); err != nil {
+		t.Errorf("failed to unmarshal %v", err)
+	}
+
+	if secretResp.SecretText != secret {
+		t.Errorf("expected %s, got %s", secret, secretResp.SecretText)
 	}
 }

@@ -16,6 +16,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type AddSecretRequest struct {
@@ -47,35 +49,7 @@ func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
 		RemainingViews: int32(secret.ExpireAfterViews),
 	}
 
-	var data []byte
-	var contentType string
-
-	acceptHeader := r.Header.Get("Accept")
-	switch acceptHeader {
-	case "application/json":
-		contentType = "application/json; charset=UTF-8"
-		data, err = json.Marshal(secretModel)
-		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-	case "application/xml":
-		contentType = "application/xml; charset=UTF-8"
-		data, err = xml.Marshal(secretModel)
-		if err != nil {
-			http.Error(w, "internal server error", http.StatusInternalServerError)
-			return
-		}
-	default:
-		c.Errorf("unsupported response type : %s", acceptHeader)
-		http.Error(w, "unsupported response type", http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(data)
-	return
+	writeResponse(c, w, r, secretModel)
 }
 
 func validateAddSecret(r *http.Request) (*AddSecretRequest, error) {
@@ -120,7 +94,61 @@ func parseFormInt(r *http.Request, fieldName string) (int, error) {
 	return val, nil
 }
 
-func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+func writeResponse(c *CallParams, w http.ResponseWriter, r *http.Request, secretModel *Secret) {
+	var data []byte
+	var contentType string
+	var err error
+
+	acceptHeader := r.Header.Get("Accept")
+	switch acceptHeader {
+	case "application/json":
+		contentType = "application/json; charset=UTF-8"
+		data, err = json.Marshal(secretModel)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	case "application/xml":
+		contentType = "application/xml; charset=UTF-8"
+		data, err = xml.Marshal(secretModel)
+		if err != nil {
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+	default:
+		c.Errorf("unsupported response type : %s", acceptHeader)
+		http.Error(w, "unsupported response type", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
+}
+
+func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	hash := params["hash"]
+
+	secret, err := c.Storage().GetSecret(hash)
+	switch err {
+	case ErrHashNotfound:
+		http.Error(w, "hash not found", http.StatusBadRequest)
+		return
+	case nil:
+		break
+	default:
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	secretModel := &Secret{
+		Hash:           hash,
+		SecretText:     secret,
+		CreatedAt:      time.Now().UTC(),
+		ExpiresAt:      time.Time{},
+		RemainingViews: int32(0),
+	}
+
+	writeResponse(c, w, r, secretModel)
 }

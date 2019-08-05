@@ -63,8 +63,7 @@ func NewRouter(dbConnStr string) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, route := range routes {
 		callParams := createCallParams(dbConnStr)
-		var handler http.Handler
-		handler = handlerWrapperLogger(callParams, route.HandlerFunc)
+		handler := handlerWrapperLogger(callParams, route.HandlerFunc)
 		handler = Logger(callParams, handler, route.Name)
 
 		router.
