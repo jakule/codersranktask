@@ -39,6 +39,15 @@ func TestAddSecret(t *testing.T) {
 			http.StatusOK,
 		},
 		{
+			"ExpireAfterViewsZero",
+			map[string]string{
+				"secret":           "secretString",
+				"expireAfterViews": "0",
+				"expireAfter":      "60",
+			},
+			http.StatusBadRequest,
+		},
+		{
 			"MissingSecret",
 			map[string]string{
 				"expireAfterViews": "15",

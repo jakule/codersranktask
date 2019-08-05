@@ -12,6 +12,7 @@ package swagger
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -66,6 +67,10 @@ func validateAddSecret(r *http.Request) (*AddSecretRequest, error) {
 	expireAfterViews, err := parseFormInt(r, "expireAfterViews")
 	if err != nil {
 		return nil, err
+	}
+
+	if expireAfterViews <= 0 {
+		return nil, errors.New("expireAfterViews has to be grater than 0")
 	}
 
 	expireAfter, err := parseFormInt(r, "expireAfter")
