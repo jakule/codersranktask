@@ -1,4 +1,4 @@
-package swagger
+package server
 
 import (
 	"bytes"
@@ -13,17 +13,10 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
-	mock_swagger "github.com/jakule/codersranktask/go/mocks"
-	"github.com/jakule/codersranktask/go/storage"
+	swagger "github.com/jakule/codersranktask/internal"
+	"github.com/jakule/codersranktask/internal/mocks"
+	"github.com/jakule/codersranktask/internal/storage"
 )
-
-func createMockCallParams(storage storage.Storage) *CallParams {
-	return &CallParams{
-		ctx:     context.Background(),
-		slog:    mustLogger(newProdLogger()).Sugar(),
-		storage: storage,
-	}
-}
 
 func TestAddSecret(t *testing.T) {
 	tests := []struct {
@@ -111,7 +104,7 @@ func TestAddSecret(t *testing.T) {
 			ctrl := gomock.NewController(t)
 
 			defer ctrl.Finish()
-			storageMock := mock_swagger.NewMockStorage(ctrl)
+			storageMock := mocks.NewMockStorage(ctrl)
 			storageMock.EXPECT().CreateSecret(&storage.SecretData{
 				Secret:           "secretString",
 				ExpireAfterViews: 15,
@@ -122,7 +115,7 @@ func TestAddSecret(t *testing.T) {
 			handler.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tt.statusCode {
-				t.Errorf("handler returned wrong status code: got %v want %v",
+				t.Errorf("server returned wrong status code: got %v want %v",
 					status, tt.statusCode)
 			}
 		})
@@ -141,13 +134,13 @@ func TestAddSecretMissingForm(t *testing.T) {
 	// Assert that Bar() is invoked.
 	defer ctrl.Finish()
 
-	storageMock := mock_swagger.NewMockStorage(ctrl)
+	storageMock := mocks.NewMockStorage(ctrl)
 	handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
 
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("server returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 }
@@ -166,7 +159,7 @@ func TestGetSecretByHash(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	defer ctrl.Finish()
-	storageMock := mock_swagger.NewMockStorage(ctrl)
+	storageMock := mocks.NewMockStorage(ctrl)
 	storageMock.
 		EXPECT().
 		GetSecret(hashString).
@@ -182,7 +175,7 @@ func TestGetSecretByHash(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("server returned wrong status code: got %v want %v",
 			status, http.StatusOK)
 	}
 
@@ -198,4 +191,10 @@ func TestGetSecretByHash(t *testing.T) {
 	if secretResp.SecretText != secret {
 		t.Errorf("expected %s, got %s", secret, secretResp.SecretText)
 	}
+}
+
+func createMockCallParams(storage storage.Storage) *swagger.CallParams {
+	return swagger.NewCallParams(context.Background(),
+		mustLogger(newProdLogger()).Sugar(),
+		storage)
 }

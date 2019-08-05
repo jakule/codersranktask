@@ -14,11 +14,12 @@ import (
 	"net/http"
 	"os"
 
-	sw "github.com/jakule/codersranktask/go"
+	"github.com/jakule/codersranktask/internal"
+	"github.com/jakule/codersranktask/internal/server"
 	"github.com/joho/godotenv"
 )
 
-//go:generate mockgen -source=go/storage/storage.go -destination go/mocks/storage_mock.go
+//go:generate mockgen -source=internal/storage/storage.go -destination internal/mocks/storage_mock.go -package=mocks
 
 func main() {
 	log.Printf("Server started")
@@ -39,11 +40,11 @@ func main() {
 		log.Fatal("DATABASE_URL is not set")
 	}
 
-	err = sw.MigrateDB(dbConnStr)
+	err = internal.MigrateDB(dbConnStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	router := sw.NewRouter(dbConnStr)
+	router := server.NewRouter(dbConnStr)
 	log.Fatal(http.ListenAndServe(addr, router))
 }

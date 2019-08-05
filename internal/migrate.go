@@ -1,4 +1,4 @@
-package swagger
+package internal
 
 import (
 	"github.com/golang-migrate/migrate/v4"

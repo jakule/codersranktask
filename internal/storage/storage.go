@@ -16,13 +16,13 @@ type SecretData struct {
 	CreatedTime      time.Time
 }
 
+var ErrHashNotfound = errors.New("hash not found")
+
 type Storage interface {
 	CreateSecret(secret *SecretData) (string, error)
 	GetSecret(secretID string) (*SecretData, error)
 	Delete(secretID string) error
 }
-
-var ErrHashNotfound = errors.New("hash not found")
 
 type PgStorage struct {
 	db *sql.DB
