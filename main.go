@@ -18,7 +18,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-//go:generate mockgen -source=go/storage.go -destination go/mocks/storage_mock.go
+//go:generate mockgen -source=go/storage/storage.go -destination go/mocks/storage_mock.go
 
 func main() {
 	log.Printf("Server started")
