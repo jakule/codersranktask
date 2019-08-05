@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
@@ -170,7 +171,10 @@ func TestGetSecretByHash(t *testing.T) {
 		EXPECT().
 		GetSecret(hashString).
 		Return(&storage.SecretData{
-			Secret: secret,
+			Secret:           secret,
+			ExpireAfterViews: 5,
+			ExpireAfterTime:  nil,
+			CreatedTime:      time.Now().Add(-5 * time.Minute),
 		}, nil).
 		AnyTimes()
 

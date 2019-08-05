@@ -25,7 +25,7 @@ type Secret struct {
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 
 	// The secret cannot be reached after this time
-	ExpiresAt time.Time `json:"expiresAt,omitempty"`
+	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 
 	// How many times the secret can be viewed
 	RemainingViews int32 `json:"remainingViews,omitempty"`

@@ -54,12 +54,13 @@ func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	c.Infof("created secret %s", id)
 
 	secretModel := &Secret{
 		Hash:           id,
 		SecretText:     secret.Secret,
 		CreatedAt:      time.Now().UTC(),
-		ExpiresAt:      time.Time{},
+		ExpiresAt:      expireAfterTime,
 		RemainingViews: int32(secret.ExpireAfterViews),
 	}
 
@@ -151,21 +152,37 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	secret, err := c.Storage().GetSecret(hash)
 	switch err {
 	case storage.ErrHashNotfound:
-		http.Error(w, "hash not found", http.StatusBadRequest)
+		c.Infof("secret not found")
+		http.Error(w, "secret not found", http.StatusBadRequest)
 		return
 	case nil:
 		break
 	default:
+		c.Errorf("failed to get secret %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if secret.ExpireAfterViews <= 0 ||
+		(secret.ExpireAfterTime != nil && secret.ExpireAfterTime.Before(time.Now())) {
+		go func() {
+			c.Infof("deleting secret %s", hash)
+			err := c.Storage().Delete(hash)
+			if err != nil {
+				// log but do not fail
+				c.Errorf("failed to delete secret %v", err)
+			}
+		}()
+		http.Error(w, "secret not found", http.StatusBadRequest)
 		return
 	}
 
 	secretModel := &Secret{
 		Hash:           hash,
 		SecretText:     secret.Secret,
-		CreatedAt:      time.Now().UTC(),
-		ExpiresAt:      time.Time{},
-		RemainingViews: int32(0),
+		CreatedAt:      secret.CreatedTime,
+		ExpiresAt:      secret.ExpireAfterTime,
+		RemainingViews: int32(secret.ExpireAfterViews),
 	}
 
 	writeResponse(c, w, r, secretModel)
