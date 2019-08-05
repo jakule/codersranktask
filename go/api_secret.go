@@ -163,7 +163,7 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if secret.ExpireAfterViews <= 0 ||
+	if secret.ExpireAfterViews < 0 ||
 		(secret.ExpireAfterTime != nil && secret.ExpireAfterTime.Before(time.Now())) {
 		go func() {
 			c.Infof("deleting secret %s", hash)
