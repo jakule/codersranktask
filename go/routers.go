@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/jakule/codersranktask/go/storage"
 	"go.uber.org/zap"
 )
 
@@ -37,14 +38,14 @@ func handlerWrapperLogger(params *CallParams, inner paramHandler) http.Handler {
 }
 
 func createCallParams(dbConnStr string) *CallParams {
-	storage, err := NewPgStorage(dbConnStr)
+	s, err := storage.NewPgStorage(dbConnStr)
 	if err != nil {
 		panic(err)
 	}
 	return &CallParams{
 		ctx:     context.Background(),
 		slog:    mustLogger(newProdLogger()).Sugar(),
-		storage: storage,
+		storage: s,
 	}
 }
 

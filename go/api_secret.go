@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jakule/codersranktask/go/storage"
 )
 
 type AddSecretRequest struct {
@@ -35,7 +36,19 @@ func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := c.Storage().CreateSecret(secret.Secret)
+	var expireAfterTime *time.Time
+	if secret.ExpireAfter > 0 {
+		now := time.Now().UTC()
+		t := now.Add(time.Duration(secret.ExpireAfter) * time.Minute)
+		expireAfterTime = &t
+	}
+
+	secretData := &storage.SecretData{
+		Secret:           secret.Secret,
+		ExpireAfterViews: secret.ExpireAfterViews,
+		ExpireAfterTime:  expireAfterTime,
+	}
+	id, err := c.Storage().CreateSecret(secretData)
 	if err != nil {
 		c.Errorf("insert failed : %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
@@ -137,7 +150,7 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 
 	secret, err := c.Storage().GetSecret(hash)
 	switch err {
-	case ErrHashNotfound:
+	case storage.ErrHashNotfound:
 		http.Error(w, "hash not found", http.StatusBadRequest)
 		return
 	case nil:
@@ -149,7 +162,7 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 
 	secretModel := &Secret{
 		Hash:           hash,
-		SecretText:     secret,
+		SecretText:     secret.Secret,
 		CreatedAt:      time.Now().UTC(),
 		ExpiresAt:      time.Time{},
 		RemainingViews: int32(0),

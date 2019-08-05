@@ -5,9 +5,10 @@
 package mock_swagger
 
 import (
-	reflect "reflect"
+	"reflect"
 
-	gomock "github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
+	"github.com/jakule/codersranktask/go/storage"
 )
 
 // MockStorage is a mock of Storage interface
@@ -34,7 +35,7 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // CreateSecret mocks base method
-func (m *MockStorage) CreateSecret(secret string) (string, error) {
+func (m *MockStorage) CreateSecret(secret *storage.SecretData) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecret", secret)
 	ret0, _ := ret[0].(string)
@@ -49,10 +50,10 @@ func (mr *MockStorageMockRecorder) CreateSecret(secret interface{}) *gomock.Call
 }
 
 // GetSecret mocks base method
-func (m *MockStorage) GetSecret(secretID string) (string, error) {
+func (m *MockStorage) GetSecret(secretID string) (*storage.SecretData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecret", secretID)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(*storage.SecretData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

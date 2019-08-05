@@ -13,9 +13,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	mock_swagger "github.com/jakule/codersranktask/go/mocks"
+	"github.com/jakule/codersranktask/go/storage"
 )
 
-func createMockCallParams(storage Storage) *CallParams {
+func createMockCallParams(storage storage.Storage) *CallParams {
 	return &CallParams{
 		ctx:     context.Background(),
 		slog:    mustLogger(newProdLogger()).Sugar(),
@@ -34,7 +35,7 @@ func TestAddSecret(t *testing.T) {
 			map[string]string{
 				"secret":           "secretString",
 				"expireAfterViews": "15",
-				"expireAfter":      "60",
+				"expireAfter":      "0",
 			},
 			http.StatusOK,
 		},
@@ -110,7 +111,11 @@ func TestAddSecret(t *testing.T) {
 
 			defer ctrl.Finish()
 			storageMock := mock_swagger.NewMockStorage(ctrl)
-			storageMock.EXPECT().CreateSecret("secretString").AnyTimes()
+			storageMock.EXPECT().CreateSecret(&storage.SecretData{
+				Secret:           "secretString",
+				ExpireAfterViews: 15,
+				ExpireAfterTime:  nil,
+			}).AnyTimes()
 
 			handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
 			handler.ServeHTTP(rr, req)
@@ -164,7 +169,9 @@ func TestGetSecretByHash(t *testing.T) {
 	storageMock.
 		EXPECT().
 		GetSecret(hashString).
-		Return(secret, nil).
+		Return(&storage.SecretData{
+			Secret: secret,
+		}, nil).
 		AnyTimes()
 
 	handler := handlerWrapperLogger(createMockCallParams(storageMock), GetSecretByHash)
