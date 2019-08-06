@@ -15,8 +15,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	swagger "github.com/jakule/codersranktask/internal"
+	"github.com/jakule/codersranktask/internal"
 	"github.com/jakule/codersranktask/internal/storage"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 )
@@ -28,7 +29,7 @@ type Route struct {
 	HandlerFunc paramHandler
 }
 
-type paramHandler func(c *swagger.CallParams, w http.ResponseWriter, r *http.Request)
+type paramHandler func(c *internal.CallParams, w http.ResponseWriter, r *http.Request)
 
 type Routes []Route
 
@@ -42,31 +43,64 @@ var routes = Routes{
 
 	Route{
 		"AddSecret",
-		strings.ToUpper("Post"),
+		"POST",
 		"/v1/secret",
 		AddSecret,
 	},
 
 	Route{
 		"GetSecretByHash",
-		strings.ToUpper("Get"),
+		"GET",
 		"/v1/secret/{hash}",
 		GetSecretByHash,
 	},
 }
 
-func handlerWrapperLogger(params *swagger.CallParams, inner paramHandler) http.Handler {
+var (
+	// counter counts incoming requests
+	counter = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "secretserver_requests_total",
+			Help: "A counter for requests to the wrapped handler.",
+		},
+		[]string{"code", "method"},
+	)
+
+	// duration is partitioned by the HTTP method and handler. It uses custom
+	// buckets based on the expected request duration.
+	duration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "secretserver_request_duration_seconds",
+			Help:    "A histogram of latencies for requests.",
+			Buckets: []float64{.25, .5, 1, 2.5, 5, 10},
+		},
+		[]string{"handler", "method"},
+	)
+
+	// reqDurations is a summary to track fictional latencies for three
+	// distinct services with different latency distributions.
+	reqDurations = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name:       "secretserver_request_response_seconds",
+			Help:       "Request latency distributions.",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+		},
+		[]string{"handler", "method"},
+	)
+)
+
+func handlerWrapperLogger(params *internal.CallParams, inner paramHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		inner(params, w, r)
 	})
 }
 
-func newCallParams(dbConnStr string) *swagger.CallParams {
+func newCallParams(dbConnStr string) *internal.CallParams {
 	s, err := storage.NewPgStorage(dbConnStr)
 	if err != nil {
 		panic(err)
 	}
-	return swagger.NewCallParams(context.Background(),
+	return internal.NewCallParams(context.Background(),
 		mustLogger(newProdLogger()).Sugar(), s)
 }
 
@@ -83,10 +117,24 @@ func mustLogger(logger *zap.Logger, err error) *zap.Logger {
 
 func NewRouter(dbConnStr string) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
+	prometheus.MustRegister(counter)
+	prometheus.MustRegister(duration)
+	prometheus.MustRegister(reqDurations)
+
 	for _, route := range routes {
 		callParams := newCallParams(dbConnStr)
 		handler := handlerWrapperLogger(callParams, route.HandlerFunc)
-		handler = swagger.Logger(callParams, handler, route.Name)
+		handler = internal.Logger(callParams, handler, route.Name)
+
+		handler = promhttp.InstrumentHandlerDuration(
+			reqDurations.MustCurryWith(prometheus.Labels{
+				"handler": strings.ToLower(route.Name),
+			}), handler)
+		handler = promhttp.InstrumentHandlerDuration(
+			duration.MustCurryWith(prometheus.Labels{
+				"handler": strings.ToLower(route.Name),
+			}), handler)
+		handler = promhttp.InstrumentHandlerCounter(counter, handler)
 
 		router.
 			Methods(route.Method).
@@ -95,6 +143,7 @@ func NewRouter(dbConnStr string) *mux.Router {
 			Handler(handler)
 	}
 
+	// Register Prometheus endpoint
 	router.Name("metrics").Handler(promhttp.Handler())
 
 	return router
