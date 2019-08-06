@@ -1,6 +1,14 @@
 version: '3.1'
 
 services:
+  secret-server:
+    build: .
+    environment:
+      DATABASE_URL: postgres://postgres:example@postgres:5432/postgres?sslmode=disable
+    depends_on:
+      - postgres
+    ports:
+      - 8080:8080
 
   postgres:
     image: postgres
@@ -9,3 +17,11 @@ services:
       POSTGRES_PASSWORD: example
     ports:
       - 5432:5432
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - 9090:9090
+    volumes:
+      - ./configs/prometheus.yaml:/etc/prometheus/prometheus.yml

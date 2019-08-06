@@ -3,6 +3,7 @@ module github.com/jakule/codersranktask
 go 1.12
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.3.3
 	github.com/golang-migrate/migrate/v4 v4.5.0
 	github.com/golang/mock v1.3.1
 	github.com/gorilla/mux v1.7.3
