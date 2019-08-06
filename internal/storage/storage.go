@@ -19,8 +19,15 @@ type SecretData struct {
 var ErrHashNotfound = errors.New("hash not found")
 
 type Storage interface {
+
+	// CreateSecret creates a new secret an returns an id of it
 	CreateSecret(secret *SecretData) (string, error)
+
+	// GetSecret retrieves a secret from database and returns is as
+	// SecretData structure
 	GetSecret(secretID string) (*SecretData, error)
+
+	// Delete allows to delete stored secret.
 	Delete(secretID string) error
 }
 
