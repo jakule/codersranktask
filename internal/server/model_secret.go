@@ -28,5 +28,5 @@ type Secret struct {
 	ExpiresAt *time.Time `json:"expiresAt,omitempty"`
 
 	// How many times the secret can be viewed
-	RemainingViews int32 `json:"remainingViews,omitempty"`
+	RemainingViews int32 `json:"remainingViews"`
 }
