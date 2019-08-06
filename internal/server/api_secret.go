@@ -16,7 +16,7 @@ import (
 	"net/http"
 	"strconv"
 
-	swagger "github.com/jakule/codersranktask/internal"
+	"github.com/jakule/codersranktask/internal"
 )
 
 func parseFormInt(r *http.Request, fieldName string) (int, error) {
@@ -33,7 +33,7 @@ func parseFormInt(r *http.Request, fieldName string) (int, error) {
 	return val, nil
 }
 
-func writeResponse(c *swagger.CallParams, w http.ResponseWriter, r *http.Request, secretModel *Secret) {
+func writeResponse(c *internal.CallParams, w http.ResponseWriter, r *http.Request, secretModel *Secret) {
 	var data []byte
 	var contentType string
 	var err error
@@ -55,7 +55,7 @@ func writeResponse(c *swagger.CallParams, w http.ResponseWriter, r *http.Request
 			return
 		}
 	default:
-		c.Errorf("unsupported response type : %s", acceptHeader)
+		c.Errorf("unsupported response type: %s", acceptHeader)
 		http.Error(w, "unsupported response type", http.StatusBadRequest)
 		return
 	}

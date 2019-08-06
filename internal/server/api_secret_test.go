@@ -13,7 +13,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
-	swagger "github.com/jakule/codersranktask/internal"
+	"github.com/jakule/codersranktask/internal"
 	"github.com/jakule/codersranktask/internal/mocks"
 	"github.com/jakule/codersranktask/internal/storage"
 )
@@ -150,7 +150,7 @@ func TestGetSecretByHash(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hashString := "hashString"
+	hashString := "c7cb197a-de61-4190-8735-17ac5a343826"
 	secret := "secretText"
 	req = mux.SetURLVars(req, map[string]string{"hash": hashString})
 	req.Header.Set("Accept", "application/json")
@@ -193,8 +193,8 @@ func TestGetSecretByHash(t *testing.T) {
 	}
 }
 
-func createMockCallParams(storage storage.Storage) *swagger.CallParams {
-	return swagger.NewCallParams(context.Background(),
+func createMockCallParams(storage storage.Storage) *internal.CallParams {
+	return internal.NewCallParams(context.Background(),
 		mustLogger(newProdLogger()).Sugar(),
 		storage)
 }

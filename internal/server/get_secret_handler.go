@@ -40,8 +40,7 @@ func GetSecretByHash(c *internal.CallParams, w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if secret.ExpireAfterViews < 0 ||
-		(secret.ExpireAfterTime != nil && secret.ExpireAfterTime.Before(time.Now())) {
+	if secretExpired(secret) {
 		go func() {
 			c.Infof("deleting secret %s", hash)
 			err := c.Storage().Delete(hash)
@@ -63,4 +62,9 @@ func GetSecretByHash(c *internal.CallParams, w http.ResponseWriter, r *http.Requ
 	}
 
 	writeResponse(c, w, r, secretModel)
+}
+
+func secretExpired(secret *storage.SecretData) bool {
+	return secret.ExpireAfterViews < 0 ||
+		(secret.ExpireAfterTime != nil && secret.ExpireAfterTime.Before(time.Now()))
 }
