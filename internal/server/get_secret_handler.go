@@ -2,16 +2,29 @@ package server
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/gorilla/mux"
-	swagger "github.com/jakule/codersranktask/internal"
+	"github.com/jakule/codersranktask/internal"
 	"github.com/jakule/codersranktask/internal/storage"
 )
 
-func GetSecretByHash(c *swagger.CallParams, w http.ResponseWriter, r *http.Request) {
+// uuidRegexFormat is a regex to validate UUIDv4 string
+const uuidRegexFormat = `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`
+
+var uuidRegex = regexp.MustCompile(uuidRegexFormat)
+
+func GetSecretByHash(c *internal.CallParams, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	hash := params["hash"]
+
+	// Check if hash comes as UUID string
+	if !uuidRegex.MatchString(hash) {
+		c.Infof("secret not found")
+		http.Error(w, "secret not found", http.StatusBadRequest)
+		return
+	}
 
 	secret, err := c.Storage().GetSecret(hash)
 	switch err {
