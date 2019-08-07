@@ -96,3 +96,32 @@ func TestPgStorage_GetSecret(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+
+func TestPgStorage_Delete(t *testing.T) {
+	var (
+		expectedQuery = `DELETE FROM secrets WHERE id = $1`
+		secretID      = "c7cb197a-de61-4190-8735-17ac5a343826"
+	)
+
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Fatalf("cannot create mock %v", err)
+	}
+
+	s := &PgStorage{
+		db: db,
+	}
+
+	mock.ExpectExec(expectedQuery).
+		WithArgs(secretID).
+		WillReturnResult(sqlmock.NewErrorResult(nil))
+
+	err = s.Delete(secretID)
+	if err != nil {
+		t.Fatalf("failed to delete secret %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
