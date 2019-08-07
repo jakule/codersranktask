@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"mime/multipart"
@@ -13,9 +12,9 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
-	"github.com/jakule/codersranktask/internal"
 	"github.com/jakule/codersranktask/internal/mocks"
 	"github.com/jakule/codersranktask/internal/storage"
+	"go.uber.org/zap"
 )
 
 func TestAddSecret(t *testing.T) {
@@ -106,12 +105,13 @@ func TestAddSecret(t *testing.T) {
 			defer ctrl.Finish()
 			storageMock := mocks.NewMockStorage(ctrl)
 			storageMock.EXPECT().CreateSecret(&storage.SecretData{
-				Secret:           "secretString",
+				Secret: tt.fields["secret"],
+				//Secret:           "secret",
 				ExpireAfterViews: 15,
 				ExpireAfterTime:  nil,
 			}).AnyTimes()
 
-			handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
+			handler := handlerWrapper(createMockCallParams(storageMock), AddSecret)
 			handler.ServeHTTP(rr, req)
 
 			if status := rr.Code; status != tt.statusCode {
@@ -135,7 +135,7 @@ func TestAddSecretMissingForm(t *testing.T) {
 	defer ctrl.Finish()
 
 	storageMock := mocks.NewMockStorage(ctrl)
-	handler := handlerWrapperLogger(createMockCallParams(storageMock), AddSecret)
+	handler := handlerWrapper(createMockCallParams(storageMock), AddSecret)
 
 	handler.ServeHTTP(rr, req)
 
@@ -171,7 +171,7 @@ func TestGetSecretByHash(t *testing.T) {
 		}, nil).
 		AnyTimes()
 
-	handler := handlerWrapperLogger(createMockCallParams(storageMock), GetSecretByHash)
+	handler := handlerWrapper(createMockCallParams(storageMock), GetSecretByHash)
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
@@ -193,8 +193,12 @@ func TestGetSecretByHash(t *testing.T) {
 	}
 }
 
-func createMockCallParams(storage storage.Storage) *internal.CallParams {
-	return internal.NewCallParams(context.Background(),
-		mustLogger(newProdLogger()).Sugar(),
-		storage)
+func handlerWrapper(params *CallParams, inner paramHandler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		inner(params, w, r)
+	})
+}
+
+func createMockCallParams(storage storage.Storage) *CallParams {
+	return NewCallParams(zap.NewNop(), storage)
 }

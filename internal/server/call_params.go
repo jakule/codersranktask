@@ -1,22 +1,20 @@
-package internal
+package server
 
 import (
-	"context"
-
 	"github.com/jakule/codersranktask/internal/storage"
 	"go.uber.org/zap"
 )
 
 type CallParams struct {
-	ctx     context.Context
 	slog    *zap.SugaredLogger
 	storage storage.Storage
 }
 
-func NewCallParams(ctx context.Context, slog *zap.SugaredLogger,
+func NewCallParams(logger *zap.Logger,
 	storage storage.Storage) *CallParams {
 
-	return &CallParams{ctx: ctx, slog: slog, storage: storage}
+	slog := logger.WithOptions(zap.AddCallerSkip(1)).Sugar()
+	return &CallParams{slog: slog, storage: storage}
 }
 
 func (c *CallParams) Infof(template string, args ...interface{}) {

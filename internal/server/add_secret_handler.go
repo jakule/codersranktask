@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	swagger "github.com/jakule/codersranktask/internal"
 	"github.com/jakule/codersranktask/internal/storage"
 	"github.com/pkg/errors"
 )
@@ -16,7 +15,7 @@ type addSecretRequest struct {
 	expireAfter      int
 }
 
-func AddSecret(c *swagger.CallParams, w http.ResponseWriter, r *http.Request) {
+func AddSecret(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	secret, err := validateAddSecret(r)
 	if err != nil {
 		c.Errorf("validation failed: %v", err)

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/jakule/codersranktask/internal"
 	"github.com/jakule/codersranktask/internal/storage"
 )
 
@@ -15,7 +14,7 @@ const uuidRegexFormat = `[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F
 
 var uuidRegex = regexp.MustCompile(uuidRegexFormat)
 
-func GetSecretByHash(c *internal.CallParams, w http.ResponseWriter, r *http.Request) {
+func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	hash := params["hash"]
 
