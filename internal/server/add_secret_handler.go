@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/jakule/codersranktask/internal/storage"
@@ -84,4 +85,18 @@ func validateAddSecret(r *http.Request) (*addSecretRequest, error) {
 		expireAfterViews: expireAfterViews,
 		expireAfter:      expireAfter,
 	}, nil
+}
+
+func parseFormInt(r *http.Request, fieldName string) (int, error) {
+	s := r.FormValue(fieldName)
+	if s == "" {
+		return 0, fmt.Errorf("expireAfterViews is missing")
+	}
+
+	val, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, fmt.Errorf("expireAfterViews is not an integer")
+	}
+
+	return val, nil
 }

@@ -83,11 +83,14 @@ var (
 	)
 )
 
-func NewRouter(callParams *CallParams) *mux.Router {
-	router := mux.NewRouter().StrictSlash(true)
+func init() {
 	prometheus.MustRegister(counter)
 	prometheus.MustRegister(duration)
 	prometheus.MustRegister(reqDurations)
+}
+
+func NewRouter(callParams *CallParams) *mux.Router {
+	router := mux.NewRouter().StrictSlash(true)
 
 	for _, route := range routes {
 		handler := Logger(callParams, route.HandlerFunc, route.Name)

@@ -13,24 +13,8 @@ package server
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"net/http"
-	"strconv"
 )
-
-func parseFormInt(r *http.Request, fieldName string) (int, error) {
-	s := r.FormValue(fieldName)
-	if s == "" {
-		return 0, fmt.Errorf("expireAfterViews is missing")
-	}
-
-	val, err := strconv.Atoi(s)
-	if err != nil {
-		return 0, fmt.Errorf("expireAfterViews is not an integer")
-	}
-
-	return val, nil
-}
 
 func writeResponse(c *CallParams, w http.ResponseWriter, r *http.Request, secretModel *Secret) {
 	var data []byte
