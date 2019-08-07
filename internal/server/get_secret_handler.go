@@ -40,16 +40,13 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if secretExpired(secret) {
-		go func() {
-			c.Infof("deleting secret %s", hash)
-			err := c.Storage().Delete(hash)
-			if err != nil {
-				// log but do not fail
-				c.Errorf("failed to delete secret %v", err)
-			}
-		}()
-		http.Error(w, "secret not found", http.StatusBadRequest)
-		return
+		c.Infof("deleting secret %s", hash)
+		err := c.Storage().Delete(hash)
+		if err != nil {
+			c.Errorf("failed to delete secret %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	secretModel := &Secret{
@@ -64,6 +61,6 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 }
 
 func secretExpired(secret *storage.SecretData) bool {
-	return secret.ExpireAfterViews < 0 ||
+	return secret.ExpireAfterViews <= 0 ||
 		(secret.ExpireAfterTime != nil && secret.ExpireAfterTime.Before(time.Now()))
 }
