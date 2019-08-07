@@ -21,7 +21,7 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	// Check if hash comes as UUID string
 	if !uuidRegex.MatchString(hash) {
 		c.Infof("secret not found")
-		http.Error(w, "secret not found", http.StatusBadRequest)
+		http.Error(w, "secret not found", http.StatusNotFound)
 		return
 	}
 
@@ -29,7 +29,7 @@ func GetSecretByHash(c *CallParams, w http.ResponseWriter, r *http.Request) {
 	switch err {
 	case storage.ErrHashNotfound:
 		c.Infof("secret not found")
-		http.Error(w, "secret not found", http.StatusBadRequest)
+		http.Error(w, "secret not found", http.StatusNotFound)
 		return
 	case nil:
 		break

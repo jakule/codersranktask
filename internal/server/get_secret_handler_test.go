@@ -156,3 +156,62 @@ func TestGetSecretAndDelete(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSecretNotFound(t *testing.T) {
+	type storedData struct {
+		secretData *storage.SecretData
+		err        error
+	}
+	tests := []struct {
+		name      string
+		hash      string
+		args      storedData
+		getCalled int
+	}{
+		{
+			"GetWrongUrl",
+			"blah",
+			storedData{nil, nil},
+			0,
+		},
+		{
+			"GetNotFound",
+			"5ee201be-e30b-4184-ae38-156748926f1f",
+			storedData{nil, storage.ErrHashNotfound},
+			1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := fmt.Sprintf("/v1/secret/%s", tt.hash)
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			req.Header.Set("Accept", "application/json")
+
+			rr := httptest.NewRecorder()
+			ctrl := gomock.NewController(t)
+
+			defer ctrl.Finish()
+			storageMock := mocks.NewMockStorage(ctrl)
+			storageMock.
+				EXPECT().
+				GetSecret(tt.hash).
+				Return(tt.args.secretData, tt.args.err).
+				Times(tt.getCalled)
+			storageMock.
+				EXPECT().
+				Delete("").
+				Times(0)
+
+			handler := NewRouter(createMockCallParams(storageMock))
+			handler.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != http.StatusNotFound {
+				t.Errorf("server returned wrong status code: got %v want %v",
+					status, http.StatusNotFound)
+			}
+		})
+	}
+}
